@@ -1,0 +1,508 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Owner Dashboard</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    margin: 0;
+    background: #f4f6f8;
+    color: #333;
+}
+
+header {
+    background: linear-gradient(135deg,#222,#444);
+    color: white;
+    padding: 25px;
+    text-align: center;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 25px;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit,minmax(200px,1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 3px 12px rgba(0,0,0,.1);
+}
+
+.stat h2 {
+    color: #ff6b35;
+    font-size: 30px;
+}
+
+.toolbar {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.toolbar button {
+    border: none;
+    padding: 10px 18px;
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+.refresh {
+    background: #ff6b35;
+    color: white;
+}
+
+.clear {
+    background: #dc3545;
+    color: white;
+}
+
+.order {
+    background: white;
+    margin-bottom: 20px;
+    padding: 22px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.1);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 12px;
+}
+
+.order-id {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.status {
+    padding: 7px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.preparing {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.ready {
+    background: #d4edda;
+    color: #155724;
+}
+
+.completed {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.customer {
+    margin-top: 15px;
+    line-height: 1.7;
+}
+
+.items {
+    margin-top: 15px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.order-total {
+    text-align: right;
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+.status-select {
+    margin-top: 15px;
+    padding: 10px;
+    width: 200px;
+}
+
+.empty {
+    background: white;
+    padding: 40px;
+    text-align: center;
+    border-radius: 12px;
+    color: #777;
+}
+
+.back {
+    display: inline-block;
+    margin-top: 20px;
+    background: #222;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 7px;
+    text-decoration: none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<h1>🔐 Canteen Owner Dashboard</h1>
+
+<p>Manage Customer Preorders</p>
+
+</header>
+
+<div class="container">
+
+<div class="dashboard">
+
+<div class="stat">
+<h2 id="totalOrders">0</h2>
+<p>Total Orders</p>
+</div>
+
+<div class="stat">
+<h2 id="pendingOrders">0</h2>
+<p>Pending Orders</p>
+</div>
+
+<div class="stat">
+<h2 id="readyOrders">0</h2>
+<p>Ready Orders</p>
+</div>
+
+<div class="stat">
+<h2 id="revenue">₹0</h2>
+<p>Total Revenue</p>
+</div>
+
+</div>
+
+<div class="toolbar">
+
+<button class="refresh"
+onclick="loadOrders()">
+🔄 Refresh Orders
+</button>
+
+<button class="clear"
+onclick="clearOrders()">
+🗑️ Clear All Orders
+</button>
+
+</div>
+
+<div id="ordersContainer"></div>
+
+<a href="customer.html" class="back">
+← Customer Page
+</a>
+
+</div>
+
+<script>
+
+function getOrders() {
+
+    return JSON.parse(
+        localStorage.getItem("canteenOrders")
+    ) || [];
+
+}
+
+function loadOrders() {
+
+    let orders = getOrders();
+
+    const container =
+        document.getElementById("ordersContainer");
+
+    container.innerHTML = "";
+
+    let pending = 0;
+
+    let ready = 0;
+
+    let revenue = 0;
+
+    orders.forEach(order => {
+
+        if (order.status === "Pending") {
+            pending++;
+        }
+
+        if (order.status === "Ready") {
+            ready++;
+        }
+
+        if (
+            order.status !== "Cancelled"
+        ) {
+            revenue += Number(order.total);
+        }
+
+        let itemsHTML = "";
+
+        order.items.forEach(item => {
+
+            itemsHTML += `
+
+            <div class="item-row">
+
+                <span>
+                    ${item.name}
+                    × ${item.quantity}
+                </span>
+
+                <strong>
+                    ₹${item.price * item.quantity}
+                </strong>
+
+            </div>
+
+            `;
+
+        });
+
+        let statusClass =
+            order.status.toLowerCase();
+
+        let div =
+            document.createElement("div");
+
+        div.className = "order";
+
+        div.innerHTML = `
+
+        <div class="order-header">
+
+            <div class="order-id">
+                🧾 ${order.orderNumber}
+            </div>
+
+            <div class="status ${statusClass}">
+                ${order.status}
+            </div>
+
+        </div>
+
+        <div class="customer">
+
+            <strong>👤 Customer:</strong>
+            ${order.name}
+
+            <br>
+
+            <strong>🪪 ID:</strong>
+            ${order.studentId}
+
+            <br>
+
+            <strong>📞 Phone:</strong>
+            ${order.phone}
+
+            <br>
+
+            <strong>⏰ Pickup:</strong>
+            ${order.pickup}
+
+            <br>
+
+            <strong>📅 Ordered:</strong>
+            ${order.date}
+
+            ${
+                order.notes
+                ?
+                `<br>
+                 <strong>📝 Note:</strong>
+                 ${order.notes}`
+                :
+                ""
+            }
+
+        </div>
+
+        <div class="items">
+
+            <strong>🍴 Items</strong>
+
+            ${itemsHTML}
+
+        </div>
+
+        <div class="order-total">
+
+            Total: ₹${order.total}
+
+        </div>
+
+        <select
+            class="status-select"
+            onchange="changeStatus(${orders.indexOf(order)},this.value)"
+        >
+
+            <option
+            ${order.status === "Pending" ? "selected" : ""}>
+            Pending
+            </option>
+
+            <option
+            ${order.status === "Preparing" ? "selected" : ""}>
+            Preparing
+            </option>
+
+            <option
+            ${order.status === "Ready" ? "selected" : ""}>
+            Ready
+            </option>
+
+            <option
+            ${order.status === "Completed" ? "selected" : ""}>
+            Completed
+            </option>
+
+            <option
+            ${order.status === "Cancelled" ? "selected" : ""}>
+            Cancelled
+            </option>
+
+        </select>
+
+        `;
+
+        container.appendChild(div);
+
+    });
+
+    document.getElementById(
+        "totalOrders"
+    ).textContent = orders.length;
+
+    document.getElementById(
+        "pendingOrders"
+    ).textContent = pending;
+
+    document.getElementById(
+        "readyOrders"
+    ).textContent = ready;
+
+    document.getElementById(
+        "revenue"
+    ).textContent = "₹" + revenue;
+
+    if (orders.length === 0) {
+
+        container.innerHTML = `
+            <div class="empty">
+                <h2>📭 No Orders</h2>
+                <p>
+                Customer orders will appear here.
+                </p>
+            </div>
+        `;
+
+    }
+
+}
+
+function changeStatus(index, status) {
+
+    let orders = getOrders();
+
+    orders[index].status = status;
+
+    localStorage.setItem(
+        "canteenOrders",
+        JSON.stringify(orders)
+    );
+
+    loadOrders();
+
+}
+
+function clearOrders() {
+
+    if (
+        confirm(
+            "Are you sure you want to delete all orders?"
+        )
+    ) {
+
+        localStorage.removeItem(
+            "canteenOrders"
+        );
+
+        loadOrders();
+
+    }
+
+}
+
+loadOrders();
+
+/*
+Automatically refresh every 2 seconds.
+*/
+
+setInterval(
+    loadOrders,
+    2000
+);
+
+</script>
+
+</body>
+
+</html>
+```
